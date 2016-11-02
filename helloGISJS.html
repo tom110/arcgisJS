@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>HELLOGISJS</title>
+    <link rel="stylesheet" type="text/css" href="arcgisJS/dijit/themes/tundra/tundra.css" />
+    <link rel="stylesheet" type="text/css" href="arcgisJS/esri/css/esri.css" />
+    <script src="arcgisJS/init.js"></script>
+<script type="text/javascript">
+    dojo.require("esri.map");
+    var myMap;
+    function init(){
+        myMap=new esri.Map("arcgisDiv");
+        var layer = new esri.layers.ArcGISDynamicMapServiceLayer("http://123.233.240.221:6080/arcgis/rest/services/MyMapService/MapServer");
+        myMap.addLayer(layer);
+        myMap.setZoom(4);
+    }
+    dojo.addOnLoad(init);
+</script>
+</head>
+<body class="tundra">
+<div id="arcgisDiv" style="height:700px;width:100%;"></div>
+</body>
+</html>
