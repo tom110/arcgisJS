@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>HELLOGISJS</title>
+    <link rel="stylesheet" type="text/css" href="arcgisJS/dijit/themes/tundra/tundra.css"/>
+    <link rel="stylesheet" type="text/css" href="arcgisJS/esri/css/esri.css"/>
+    <script src="arcgisJS/dojo/dojo.js"></script>
+    <script src="arcgisJS/init.js"></script>
+    <script type="text/javascript">
+        dojo.require("esri.map");
+        dojo.require("esri.dijit.OverviewMap");
+        dojo.require("esri.toolbars.navigation");
+        var myMap;
+        var navToolbar;
+        function init() {
+            myMap = new esri.Map("arcgisDiv",{logo:false});
+            navToolbar=new esri.toolbars.Navigation(myMap);
+            var layer = new esri.layers.ArcGISDynamicMapServiceLayer("http://123.233.240.221:6080/arcgis/rest/services/MyMapService/MapServer");
+            myMap.addLayer(layer);
+            myMap.setZoom(4);
+
+            var fangda = dojo.byId("fangda");
+            var suoxiao = dojo.byId("suoxiao");
+            var quanping=dojo.byId("quanping");
+            var yingyan=dojo.byId("yingyan");
+            var toudong=dojo.byId("tuodong");
+
+            dojo.connect(fangda,"click",function(evt){
+                navToolbar.activate(esri.toolbars.Navigation.ZOOM_IN);
+            });
+
+            dojo.connect(suoxiao,"click",function(evt){
+                navToolbar.activate(esri.toolbars.Navigation.ZOOM_OUT);
+            });
+
+            dojo.connect(tuodong,"click",function(evt){
+                navToolbar.activate(esri.toolbars.Navigation.PAN);
+            });
+
+            dojo.connect(quanping,"click",function(evt){
+                navToolbar.zoomToFullExtent();
+            });
+
+            dojo.connect(yingyan,"click",function(evt){
+                var overviewMap=new esri.dijit.OverviewMap({
+                    map:myMap,
+                    visible:true
+                });
+                overviewMap.startup();
+            });
+        }
+        dojo.addOnLoad(init);
+    </script>
+</head>
+<body class="tundra">
+<div id="arcgisDiv" style="height:700px;width:100%;border:1px solid"></div>
+<table>
+    <tr>
+        <td><input type="button" id="fangda" value="放大"/></td>
+        <input type="button" id="suoxiao" value="缩小"/>
+        <input type="button" id="quanping" value="全屏"/>
+        <input type="button" id="yingyan" value="鹰眼"/>
+        <input type="button" id="tuodong" value="拖动"/>
+
+    </tr>
+</table>
+</body>
+</html>

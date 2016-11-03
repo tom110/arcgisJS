@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>HELLOGISJS</title>
+    <link rel="stylesheet" type="text/css" href="arcgisJS/dijit/themes/tundra/tundra.css"/>
+    <link rel="stylesheet" type="text/css" href="arcgisJS/esri/css/esri.css"/>
+    <script src="arcgisJS/init.js"></script>
+    <script type="text/javascript">
+        dojo.require("esri.map");
+        var myMap;
+        var layer;
+        function init() {
+            myMap = new esri.Map("arcgisDiv");
+            layer = new esri.layers.ArcGISDynamicMapServiceLayer("http://123.233.240.221:6080/arcgis/rest/services/MyMapService/MapServer");
+//http://123.233.240.221:6080/arcgis/rest/services/zhaohushanMap/MapServer
+            dojo.connect(layer, "onLoad", function (layers) {
+                var html = "";
+                var infos = layers.layerInfos;
+                for (var i = 0; i < infos.length; i++) {
+                    var info = infos[i];
+                    html = html + "<div><input id='" + info.id + "' name='layerList' class='listCss' type='checkbox' value='checkbox' onclick='setLayerVisible()' " + (info.defaultVisibility ? "checked" : "") + "/>" + info.name + "</div>";
+                }
+                dojo.byId("checkboxes").innerHTML=html;
+            });
+            myMap.addLayer(layer);
+            myMap.setZoom(4);
+
+
+        }
+        function setLayerVisible() {
+            var inputs = dojo.query(".listCss");
+            var visible = [];
+            for (var i = 0; i < inputs.length; i++) {
+                if (inputs[i].checked) {
+                    visible.push(inputs[i].id);
+                } else {
+                    visible.push(-1);
+                }
+            }
+            layer.setVisibleLayers(visible);
+        }
+
+        dojo.addOnLoad(init);
+    </script>
+</head>
+<body class="tundra">
+<div id="arcgisDiv" style="height:700px;width:100%;border:1px solid"></div>
+<div id="checkboxes"></div>
+
+</body>
+</html>

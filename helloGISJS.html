@@ -9,32 +9,32 @@
     <script type="text/javascript">
         dojo.require("esri.map");
         var myMap;
-        function init(){
+        function init() {
             myMap = new esri.Map("arcgisDiv");
             var layer = new esri.layers.ArcGISDynamicMapServiceLayer("http://123.233.240.221:6080/arcgis/rest/services/MyMapService/MapServer");
             myMap.addLayer(layer);
             myMap.setZoom(4);
 
-            var p1=dojo.byId("p1");
-            var p2=dojo.byId("p2");
-            dojo.connect(myMap,"onMouseMove",function(e){
-                var mp= e.mapPoint;
-                var sp= e.screenPoint;
-                p1.innerHTML=mp.x+"/"+sp.x;
-                p2.innerHTML=mp.y+"/"+sp.y;
+            var p1 = dojo.byId("p1");
+            var p2 = dojo.byId("p2");
+            dojo.connect(myMap, "onMouseMove", function (e) {
+                var mp = e.mapPoint;
+                var sp = e.screenPoint;
+                p1.innerHTML = mp.x + "/" + sp.x;
+                p2.innerHTML = mp.y + "/" + sp.y;
             });
         }
-
         dojo.addOnLoad(init);
-
-
-
     </script>
 </head>
 <body class="tundra">
 <div id="arcgisDiv" style="height:700px;width:100%;border:1px solid"></div>
 <table>
-    <tr><td><div id="p1"></div></td><td>，</td><td><div id="p2"></div></td></tr>
+    <tr>
+        <td><p id="p1"></p></td>
+        <td>，</td>
+        <td><p id="p2"></p></td>
+    </tr>
 </table>
 </body>
 </html>
