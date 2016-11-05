@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>HELLOGISJS</title>
+    <link rel="stylesheet" type="text/css" href="arcgisJS/dijit/themes/tundra/tundra.css"/>
+    <link rel="stylesheet" type="text/css" href="arcgisJS/esri/css/esri.css"/>
+    <script src="arcgisJS/init.js"></script>
+    <script src="arcgisJS/jsapi_vsdoc12_v38.js"></script>
+    <script>
+        dojo.require("esri.map");
+        dojo.require("esri.dijit.Scalebar");
+        dojo.require("esri.dijit.Bookmarks");
+        dojo.require("esri.dijit.BookmarkItem");
+        var myMap, Books;
+        function init() {
+            myMap = new esri.Map("map1");
+            var portlandLandBase = new esri.layers.ArcGISDynamicMapServiceLayer("http://123.233.240.221:6080/arcgis/rest/services/MyMapService/MapServer");
+            //设置要显示的图层
+//            portlandLandBase.setVisibleLayers([2, 1, 0]);
+            //设置图层透明度
+            portlandLandBase.setOpacity(0.8);
+            myMap.addLayer(portlandLandBase);
+
+            var div1 = dojo.byId("div1");
+            var div2 = dojo.byId("div2");
+
+            //为一个div添加比例尺控件
+            var scalebar = new esri.dijit.Scalebar({
+                map: myMap,
+                // "dual" displays both miles and kilmometers
+                // "english" is the default, which displays miles
+                // use "metric" for kilometers
+                scalebarUnit: "metric"
+            }, dojo.byId("scalebardiv"));
+
+            //为一个div添加书签控件书签控件
+            Books = new esri.dijit.Bookmarks({
+                map: myMap,
+                editable: "true"
+            }, dojo.byId("bookmarks"));
+
+            dojo.connect(button1, "click", addBook);
+        }
+        //动态添加书签
+        function addBook() {
+            var bookextent = myMap.extent;
+            var bookmarkItem = new esri.dijit.BookmarkItem({
+                "extent": bookextent,
+                "name": "北京"
+            });
+            Books.addBookmark(bookmarkItem);
+        }
+
+        dojo.addOnLoad(init)
+    </script>
+</head>
+<body>
+<div id="scalebardiv"></div>
+<div id="map1" style=" width:900px; height:500px"></div>
+<div id="div1"></div>
+<div id="div2"></div>
+<table>
+    <tr>
+        <td>
+            <div id="bookmarks"></div>
+        </td>
+        <td></td>
+        <td>
+            <button id="button1">添加标签</button>
+        </td>
+    </tr>
+</table>
+</body>
+</html>
