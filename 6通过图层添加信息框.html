@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!DOCTYPE HTML>
 <html>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
@@ -10,7 +10,12 @@
     <link rel="stylesheet" href="arcgisJS_318/dojox/layout/resources/ExpandoPane.css">
     <link rel="stylesheet" type="text/css" href="arcgisJS_318/esri/css/esri.css"/>
     <style>
-        html, body { height: 100%; width: 100%; margin: 0; padding: 0; }
+        html, body {
+            height: 100%;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+        }
     </style>
 
     <script src="arcgisJS_318/init.js"></script>
@@ -35,19 +40,19 @@
                     "dojox/layout/ExpandoPane",
                     "dojo/domReady!"
                 ],
-                function (
-                        Map, InfoTemplate, FeatureLayer, SimpleRenderer, SimpleFillSymbol,
-                        SimpleLineSymbol, dom, number, on, parser, Color
-                ) {
+                function (Map, InfoTemplate, FeatureLayer, SimpleRenderer, SimpleFillSymbol,
+                          SimpleLineSymbol, dom, number, on, parser, Color) {
 
                     parser.parse();
 
+                    //设置底图
                     map = new Map("mapDiv", {
                         basemap: "streets",
                         center: [-86.796, 47.13],
-                        zoom: 7
+                        zoom: 7,
                     });
 
+                    //定义信息模板（信息窗中可以定义函数设置信息框中的元素显示样式和内容）
                     var infoTemplate = new InfoTemplate();
                     infoTemplate.setTitle("人口变化在 ${NAME}");
                     infoTemplate.setContent("<b>2007 :D: </b>${POP2007:compare}<br/>" +
@@ -56,20 +61,21 @@
                             "<b>2000 density: </b>${POP00_SQMI:NumberFormat}");
 
                     var counties = new FeatureLayer("https://sampleserver1.arcgisonline.com/ArcGIS/rest/services/Demographics/ESRI_Census_USA/MapServer/3", {
-                        mode: FeatureLayer.MODE_SNAPSHOT,
+                        mode: FeatureLayer.MODE_ONDEMAND,
                         infoTemplate: infoTemplate,
                         outFields: [
                             "NAME", "POP2000", "POP2007", "POP00_SQMI",
-                            "POP07_SQMI"
+                            "POP07_SQMI","STATE_NAME"
                         ]
                     });
 
+                    //设置过滤条件，只显示一个地区的数据，如果去掉则显示全部的
                     counties.setDefinitionExpression("STATE_NAME = 'Michigan'");
 
-                    //apply a renderer
+                    //填充featureLayer层面状几何体的样式（填充样式、边线样式（颜色<透明度>，宽度）、填充面颜色）
                     var symbol = new SimpleFillSymbol(SimpleFillSymbol.STYLE_SOLID,
                             new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID,
-                                    new Color([255, 255, 255, 0.35]), 1),
+                                    new Color([255, 255, 255, 1]), 1),
                             new Color([109, 146, 155, 0.35]));
                     counties.setRenderer(new SimpleRenderer(symbol));
 
@@ -80,7 +86,39 @@
 
                     dom.byId("chkT1").checked = true;
 
+                    //设置样式信息框变换函数
+                    function changeInfoTemplate() {
+                        //console.log("changed");
+                        map.infoWindow.hide();//隐藏信息窗
+
+                        var t1Checked = dom.byId("chkT1").checked;
+                        var t2Checked = dom.byId("chkT2").checked;
+                        var templateContent = "";
+
+                        if (t1Checked) {
+                            templateContent = "<b>2007: </b>${POP2007:compare}<br/>" +
+                                    "<b>2007 density: </b>${POP07_SQMI:compare}<br/><br/>" +
+                                    "<b>2000: </b>${POP2000:NumberFormat}<br/>" +
+                                    "<b>2000 density: </b>${POP00_SQMI:NumberFormat}";
+                        }
+                        else if (t2Checked) {
+                            templateContent = "<b>2007: </b>${POP2007}<br/>" +
+                                    "<b>2007 density: </b>${POP07_SQMI}<br/><br/>" +
+                                    "<b>2000: </b>${POP2000:NumberFormat}<br/>" +
+                                    "<b>2000 density: </b>${POP00_SQMI:NumberFormat}<br/><br/>" +
+                                    "Diff: ${DIFF:compare2}";
+                        }
+
+                        //设置featureLayer层信息窗内容样式
+                        counties.infoTemplate.setContent(templateContent);
+                    }
+
+                    //通过函数可以得到信息窗中相应的键值对和其所对应的数据实体类(定义featureLayer时outFields组成的类)
                     compare = function (value, key, data) {
+                        console.log(value);
+                        console.log(key);
+                        console.log(data);
+                        console.log(data.STATE_NAME);
                         var result = "", diff, pctChange;
 
                         switch (key) {
@@ -101,7 +139,7 @@
                                 "&nbsp;&nbsp; <img src='" + result + "'/>" +
                                 "&nbsp;&nbsp;<span style='color: " +
                                 (pctChange < 0 ? "red" : "green") + ";'>"
-                                + number.format(pctChange, { places: 3 }) +
+                                + number.format(pctChange, {places: 3}) +
                                 "%</span>";
                     };
 
@@ -113,34 +151,11 @@
                         return "<img src='" + result + "'/>" +
                                 "&nbsp;&nbsp;<span style='color: " +
                                 (pctChange < 0 ? "red" : "green") + ";'>"
-                                + number.format(pctChange, { places: 3 }) +
+                                + number.format(pctChange, {places: 3}) +
                                 "%</span>";
                     };
 
-                    function changeInfoTemplate () {
-                        console.log("changed");
-                        map.infoWindow.hide();
 
-                        var t1Checked = dom.byId("chkT1").checked;
-                        var t2Checked = dom.byId("chkT2").checked;
-                        var templateContent = "";
-
-                        if (t1Checked) {
-                            templateContent = "<b>2007: </b>${POP2007:compare}<br/>" +
-                                    "<b>2007 density: </b>${POP07_SQMI:compare}<br/><br/>" +
-                                    "<b>2000: </b>${POP2000:NumberFormat}<br/>" +
-                                    "<b>2000 density: </b>${POP00_SQMI:NumberFormat}";
-                        }
-                        else if (t2Checked) {
-                            templateContent = "<b>2007: </b>${POP2007}<br/>" +
-                                    "<b>2007 density: </b>${POP07_SQMI}<br/><br/>" +
-                                    "<b>2000: </b>${POP2000:NumberFormat}<br/>" +
-                                    "<b>2000 density: </b>${POP00_SQMI:NumberFormat}<br/><br/>" +
-                                    "Diff: ${DIFF:compare2}";
-                        }
-
-                        counties.infoTemplate.setContent(templateContent);
-                    }
                 });
     </script>
 </head>
@@ -154,10 +169,12 @@
          style="width:220px;">
         <p>
             Click a county to view the population change between 2000 and 2007.<br/> <br/>
-            <b>Change the info template:</b> Template 1 displays the percentage growth (or decline) in population. The values are color-coded green for population increase and red for decline in population. Template 2 creates a new calculated field called diff that displays the population difference. <br/>
+            <b>Change the info template:</b> Template 1 displays the percentage growth (or decline) in population. The
+            values are color-coded green for population increase and red for decline in population. Template 2 creates a
+            new calculated field called diff that displays the population difference. <br/>
             <input id="chkT1" name="template" type="radio"/>
             <label for="chkT1">Template 1</label>
-            <br />
+            <br/>
             <input id="chkT2" name="template" type="radio"/>
             <label for="chkT2">Template 2</label>
         </p>
