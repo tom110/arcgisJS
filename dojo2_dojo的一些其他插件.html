@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <title></title>
+
+    <script src="http://localhost:8080/arcgisJS/arcgisJS_318/dojo/dojo.js"></script>
+    <script>
+        //dojo/domReady!为状态
+        require(["dojo/on", "dojo/dom", "dojo/dom-style", "dojo/request", "dojo/mouse", "dojo/domReady!"],
+                function (on, dom, domStyle, request, mouse) {
+                    var myButton = dom.byId("myButton");
+                    var myButton2 = dom.byId("myButton2"),
+                            myDiv = dom.byId("myDiv");
+
+                    on(myButton2, "click", function (evt) {
+                        request.get("myPackages/TextFile.txt").then(
+                                function (response) {
+                                    myDiv.innerHTML = "<pre>" + response + "</pre>";
+                                },
+                                function (error) {
+                                    myDiv.innerHTML = "<div class=\"error\">" + error + "<div>";
+                                }
+                        );
+                    });
+
+                    on(myButton, "click", function (evt) {
+                        domStyle.set(myDiv, "backgroundColor", "blue");
+                    });
+                    on(myDiv, mouse.enter, function (evt) {
+                        domStyle.set(myDiv, "backgroundColor", "red");
+                    });
+                    on(myDiv, mouse.leave, function (evt) {
+                        domStyle.set(myDiv, "backgroundColor", "");
+                    });
+                });
+    </script>
+
+
+</head>
+<body>
+<h1 id="selected_text">Hello</h1>
+<button id="myButton">单击ON</button>
+<button id="myButton2">单击Request</button>
+<div id="myDiv">myDiv</div>
+</body>
+</html>

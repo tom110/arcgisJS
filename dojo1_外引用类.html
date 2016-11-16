@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>外引用类</title>
+    <script>
+        var dojoConfig={baseUrl:"myPackages/",packages:[{name:"person",location:"person"}]};
+    </script>
+    <script src="http://localhost:8080/arcgisJS/arcgisJS_318/dojo/dojo.js"></script>
+    <script>
+        //require里面的引用路径dojo自动配置，不需要我们根据路径配置
+        require(["dojo/ready","person/Person"],
+        function(ready,Person){
+            ready(function(){
+                var id="selected_text";
+                var person1=new Person("xiaoming");
+                window.alert(person1.name);
+            });
+        });
+    </script>
+</head>
+<body>
+
+</body>
+</html>

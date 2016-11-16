@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <!--The viewport meta tag is used to improve the presentation and behavior of the samples
+      on iOS devices-->
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1,user-scalable=no">
+    <title>7通过创建查询任务添加信息框</title>
+
+    <link rel="stylesheet" type="text/css" href="arcgisJS_318/dijit/themes/tundra/tundra.css"/>
+    <link rel="stylesheet" type="text/css" href="arcgisJS_318/esri/css/esri.css"/>
+    <script src="arcgisJS_318/init.js"></script>
+    <script>
+        dojo.require("esri.map");
+        dojo.require("esri.tasks.query");
+
+        var map, queryTask, query;
+        var symbol, infoTemplate;
+
+        function init() {
+            //创建底图
+            map = new esri.Map("mapDiv");
+            var layer = new esri.layers.ArcGISDynamicMapServiceLayer("http://sampleserver1.arcgisonline.com/ArcGIS/rest/services/Specialty/ESRI_StateCityHighway_USA/MapServer");
+            map.addLayer(layer);
+            //注册单击事件
+            dojo.connect(map, "onClick", executeQueryTask);//地图单击事件
+
+            //查询信息(注意查询的是子层的url)
+            queryTask = new esri.tasks.QueryTask("http://sampleserver1.arcgisonline.com/ArcGIS/rest/services/Specialty/ESRI_StateCityHighway_USA/MapServer/1");
+            query = new esri.tasks.Query();
+            query.returnGeometry = true;
+            //query.outFields = ["STATE_NAME", "STATE_FIPS", "STATE_ABBR", "HYPERLINK", "AREA"];
+            query.outFields=["*"];//输出所有字段
+
+            infoTemplate = new esri.InfoTemplate("${STATE_NAME}", "State Fips: ${STATE_FIPS}<br />Abbreviation: ${STATE_ABBR}<br />Area: ${AREA:compass}");
+
+            symbol = new esri.symbol.SimpleFillSymbol(esri.symbol.SimpleFillSymbol.STYLE_SOLID,
+                    new esri.symbol.SimpleLineSymbol(esri.symbol.SimpleLineSymbol.STYLE_DASHDOT,
+                            new dojo.Color([255, 0, 0]), 2),
+                    new dojo.Color([255, 255, 0, 0.5]));
+        }
+
+        function executeQueryTask(evt) {
+            query.geometry = evt.mapPoint;//根据点击地图的坐标得到查询的几何元素
+            queryTask.execute(query, showResults);
+        }
+
+        //根据鼠标点击得到一个数据集，然后遍历数据集添加面状几何元素并显示，并为其设置信息显示框
+        function showResults(featureSet) {
+            map.graphics.clear();//清除添加的集合面元素
+            console.log(featureSet);
+            dojo.forEach(featureSet.features, function (feature) {
+                var graphic = feature;
+                graphic.setSymbol(symbol);
+                graphic.setInfoTemplate(infoTemplate);
+                map.graphics.add(graphic);
+            });
+        }
+
+        //可以根据输出定义自己的显示，此处就可以引入数据库内容
+        function compass(value,key,data){
+            return value+"平方公里";
+        }
+
+        dojo.ready(init);
+    </script>
+</head>
+<body class="claro">
+Click on a State to get more info. When State is highlighted, click State again to get infoWindow.
+<div id="mapDiv" style="width:100%; height:1000px; border:1px solid #000;"></div>
+</body>
+</html>

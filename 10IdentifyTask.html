@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <!--The viewport meta tag is used to improve the presentation and behavior of the samples
+      on iOS devices-->
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1,user-scalable=no">
+    <title>Identify Sample</title>
+
+    <link rel="stylesheet" type="text/css" href="arcgisJS_318/dijit/themes/tundra/tundra.css"/>
+    <link rel="stylesheet" type="text/css" href="arcgisJS_318/esri/css/esri.css"/>
+    <script src="arcgisJS_318/init.js"></script>
+    <style>
+        html, body {
+            height: 98%;
+            width: 98%;
+            margin: 0;
+            padding: 5px;
+        }
+    </style>
+
+    <script>
+        //IdentifyTask：是一个在地图服务中识别要素（Feature）的功能类。通过IdentifyTask可以搜索地图层中与输入几何形相交的要素
+        //（search the layers in a map for features that intersect an input geometry）。因为也是在多个图层中查询，所以Task的
+        //URL是动态图层服务的地址。同样，返回的要素都可以作为Graphic被添加到地图的GraphicsLayer上。
+        //IdentifyTask：返回的是一个IdentifyResults数组，IdentifyResults[i].feature可以加入到GraphicsLayer上显示，也可以通过Attributes属性字段得到属性信息。
+        var map, bldgResults, parcelResults, symbol;
+
+        require([
+                    "esri/map",
+                    "esri/layers/ArcGISDynamicMapServiceLayer",
+                    "esri/symbols/SimpleFillSymbol",
+                    "esri/symbols/SimpleLineSymbol",
+                    "esri/tasks/IdentifyTask",
+                    "esri/tasks/IdentifyParameters",
+                    "dojo/on",
+                    "dojo/parser",
+                    "esri/Color",
+                    "dijit/registry",
+                    "dijit/form/Button",
+                    "dijit/layout/ContentPane",
+                    "dijit/layout/TabContainer",
+                    "dojo/domReady!"
+                ],
+                function (Map, ArcGISDynamicMapServiceLayer, SimpleFillSymbol, SimpleLineSymbol,
+                          IdentifyTask, IdentifyParameters, on, parser, Color, registry) {
+
+                    parser.parse();
+
+                    var identifyTask, identifyParams;
+
+                    map = new Map("mapDiv", {
+                        basemap: "streets",
+                        center: [-83.275, 42.573],
+                        zoom: 18
+                    });
+                    //注册底图加载事件
+                    map.on("load", initFunctionality);
+
+                    var landBaseLayer = new ArcGISDynamicMapServiceLayer("http://sampleserver3.arcgisonline.com/ArcGIS/rest/services/BloomfieldHillsMichigan/Parcels/MapServer", {
+                        opacity: 0.2
+                    });
+                    //注册信息窗体的样式
+                    map.infoWindow.on("show", function () {
+                        var tabs = registry.byId("tabs");
+                        //dojo的parser会把html节点根据所声明的类型（data-dojo-type）转化为相应的dijit组件的template（dojo类型的节点），
+                        //并且会给这些相应的template赋上对应的id，属性等等，并且把组件的id注册到dijit.registry里。在注册到registry的过程中，
+                        //如果没有显式的指定id，则registry会生成一个自增的id赋值给相应的组件，如果显式的指定id，则使用指定的id。
+                        //注册表：页面中所有小部件ID或Node的集合。常用方法：byId()、byNode()等
+                        //registry.byId返回的是一个Object，而dom.byId返回的是Dom node
+                        //console.log(tabs);
+                        tabs.resize();
+                    });
+                    map.addLayer(landBaseLayer);
+                    //初始化查询对象，样式对象
+                    function initFunctionality() {
+                        map.on("click", doIdentify);//注册底图点击事件
+
+                        identifyTask = new IdentifyTask("http://sampleserver3.arcgisonline.com/ArcGIS/rest/services/BloomfieldHillsMichigan/Parcels/MapServer");
+
+                        identifyParams = new IdentifyParameters();
+                        identifyParams.tolerance = 3;//指定范围
+                        identifyParams.returnGeometry = true;//是否返回集合对象
+                        identifyParams.layerIds = [0, 2];//确实操作那个些层
+                        identifyParams.layerOption = IdentifyParameters.LAYER_OPTION_ALL;//指定使用哪个层在使用识别
+                        identifyParams.width = map.width; //当前正在查看地图的像素高度
+                        identifyParams.height = map.height;//当前正在查看地图的像素宽度
+
+                        map.infoWindow.resize(415, 200);
+                        map.infoWindow.setContent(registry.byId("tabs").domNode);
+                        map.infoWindow.setTitle("Identify Results");
+
+                        symbol = new SimpleFillSymbol(SimpleFillSymbol.STYLE_SOLID,
+                                new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID,
+                                        new Color([255, 0, 0]), 2),
+                                new Color([255, 255, 0, 0.25]));
+                    }
+
+                    //地图单击事件（补全identifyParams）
+                    function doIdentify(event) {
+                        map.graphics.clear();
+                        identifyParams.geometry = event.mapPoint;//查询的集合信息，与查询图层相交
+                        identifyParams.mapExtent = map.extent;//地图范围
+                        identifyTask.execute(identifyParams, function (idResults) {
+                            addToMap(idResults, event);
+                        });
+                    }
+
+                    //加在地图信息
+                    function addToMap(idResults, event) {
+                        bldgResults = {displayFieldName: null, features: []};//建筑物结果集对象
+                        parcelResults = {displayFieldName: null, features: []};//包裹结果集对象
+
+                        console.log(idResults);
+                        for (var i = 0, il = idResults.length; i < il; i++) {//遍历返回的结果集
+                            var idResult = idResults[i];//获取对象
+                            console.log(idResult);
+                            if (idResult.layerId === 0) {//获取图层0的内容
+                                if (!bldgResults.displayFieldName) {
+                                    bldgResults.displayFieldName = idResult.displayFieldName;
+                                }
+                                bldgResults.features.push(idResult.feature);
+                            }
+                            else if (idResult.layerId === 2) {//获取图层2的内容
+                                if (!parcelResults.displayFieldName) {
+                                    parcelResults.displayFieldName = idResult.displayFieldName;
+                                }
+                                parcelResults.features.push(idResult.feature);
+                            }
+                        }
+                        registry.byId("bldgTab").set("content", buildingResultTabContent(bldgResults));
+                        registry.byId("parcelTab").set("content", parcelResultTabContent(parcelResults));
+
+                        //getInfoWindowAnchor点的锚
+                        map.infoWindow.show(event.screenPoint, map.getInfoWindowAnchor(event.screenPoint));
+                    }
+
+                    //模板化建筑物结果集
+                    function buildingResultTabContent(results) {
+                        var template = "";
+                        var features = results.features;
+
+                        template += "<i>Total features returned: " + features.length + "</i>";
+                        template += "<table border='1'>";
+                        template += "<tr><th>ID</th><th>Address</th></tr>";
+
+                        var parcelId;
+                        var fullSiteAddress;
+                        for (var i = 0, il = features.length; i < il; i++) {
+                            //console.log(features[i]);
+                            parcelId = features[i].attributes['PARCELID'];
+                            fullSiteAddress = features[i].attributes['Full Site Address'];
+
+                            template += "<tr>";
+                            template += "<td>" + parcelId + " <a href='#' onclick='showFeature(bldgResults.features[" + i + "]); return false;'>(show)</a></td>";
+                            template += "<td>" + fullSiteAddress + "</td>";
+                            template += "</tr>";
+                        }
+
+                        template += "</table>";
+
+                        return template;
+                    }
+
+                    //模板化税务包裹结果集
+                    function parcelResultTabContent(results) {
+                        var template = "";
+                        var features = results.features;
+
+                        template = "<i>Total features returned: " + features.length + "</i>";
+                        template += "<table border='1'>";
+                        template += "<tr><th>ID</th><th>Year Built</th><th>School District</th><th>Description</th></tr>";
+
+                        var parcelIdNumber;
+                        var residentialYearBuilt;
+                        var schoolDistrictDescription;
+                        var propertyDescription;
+                        for (var i = 0, il = features.length; i < il; i++) {
+                            parcelIdNumber = features[i].attributes['Parcel Identification Number'];
+                            residentialYearBuilt = features[i].attributes['Residential Year Built'];
+                            schoolDistrictDescription = features[i].attributes['School District Description'];
+                            propertyDescription = features[i].attributes['Property Description'];
+
+                            template += "<tr>";
+                            template += "<td>" + parcelIdNumber + " <a href='#' onclick='showFeature(parcelResults.features[" + i + "]); return false;'>(显示区域范围)</a></td>";
+                            template += "<td>" + residentialYearBuilt + "</td>";
+                            template += "<td>" + schoolDistrictDescription + "</td>";
+                            template += "<td>" + propertyDescription + "</td>";
+                            template += "</tr>";
+                        }
+
+                        template += "</table>";
+
+                        return template;
+                    }
+                });
+
+        function showFeature(feature) {//设定样式，添加feature
+            map.graphics.clear();
+            feature.setSymbol(symbol);
+            map.graphics.add(feature);
+        }
+    </script>
+</head>
+
+<body class="claro">
+Click the map to identify building and tax information.
+<div id="mapDiv" style="width:800px; height:600px; border:1px solid #000;"></div>
+<!-- info window tabs -->
+<div id="tabs" dojoType="dijit/layout/TabContainer" style="width:385px; height:150px;">
+    <div id="bldgTab" dojoType="dijit/layout/ContentPane" title="Buildings"></div>
+    <div id="parcelTab" dojoType="dijit/layout/ContentPane" title="Tax Parcels"></div>
+</div>
+</body>
+</html>

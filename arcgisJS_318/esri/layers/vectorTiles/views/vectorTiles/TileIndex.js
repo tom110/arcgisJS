@@ -1,0 +1,5 @@
+// All material copyright ESRI, All Rights Reserved, unless otherwise specified.
+// See http://js.arcgis.com/3.18/esri/copyright.txt for details.
+//>>built
+define("esri/layers/vectorTiles/views/vectorTiles/TileIndex",["require","exports","../2d/layers/support/TileKey"],function(k,l,g){return function(){function f(a){this._tilemap=a.index}f.prototype.dataKey=function(a){for(var d=[a];0!==a.level;)a=new g(a.level-1,a.row>>1,a.col>>1,a.world),d.push(a);a=this._tilemap;for(var c=d.pop(),b,e;d.length;){b=d.pop();e=c.level+1;var f=2*c.row,h=2*c.col;e=[g.getId(e,f,h,b.world),g.getId(e,f,h+1,b.world),g.getId(e,f+1,h,b.world),g.getId(e,f+1,h+1,b.world)].indexOf(b.id);
+if(a)if(0===a[e]){c=null;break}else if(1===a[e]){c=b;break}else c=b,a=a[e]}return c};f.prototype.forEach=function(a,d,c,b,e){this._callback=e;this._maxLevel=d+a;this._forEach(this._tilemap,d,c,b)};f.prototype._forEach=function(a,d,c,b){0!==a&&(this._callback(d,c,b),d!==this._maxLevel&&"object"===typeof a&&(this._forEach(a[0],d+1,2*c,2*b),this._forEach(a[1],d+1,2*c,2*b+1),this._forEach(a[2],d+1,2*c+1,2*b),this._forEach(a[3],d+1,2*c+1,2*b+1)))};return f}()});

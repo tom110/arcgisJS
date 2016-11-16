@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <!--The viewport meta tag is used to improve the presentation and behavior of the samples
+      on iOS devices-->
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1,user-scalable=no">
+    <title>Display Find Task results in Dojo DataGrid</title>
+
+    <link rel="stylesheet" type="text/css" href="arcgisJS_318/dijit/themes/tundra/tundra.css"/>
+    <link rel="stylesheet" type="text/css" href="arcgisJS_318/esri/css/esri.css"/>
+    <script src="arcgisJS_318/init.js"></script>
+    <style>
+        html, body {
+            height: 100%;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+
+    <script>
+        //FindTask：允许对地图中一个或多个图层的要素进行基于属性字段值的查询
+        //FindTask不能进行“空间查询”，因为FindTask可以对多个图层进行查询，所有它的url属性需要指向所查询的地图服务的REST URL，
+        //而不像QueryTask需要指定某个图层的URL。
+        //FindTask：返回的是一个FindResults数组, FindResults[i].feature可以加入到GraphicsLayer上显示，也可以通过Attributes属性字段得到属性信息。
+        require([
+            "esri/map",
+            "esri/tasks/FindTask",
+            "esri/tasks/FindParameters",
+            "esri/symbols/SimpleMarkerSymbol",
+            "esri/symbols/SimpleLineSymbol",
+            "esri/symbols/SimpleFillSymbol",
+
+            "esri/Color",
+            "dojo/on",
+            "dojo/dom",
+            "dijit/registry",
+            "dojo/_base/array",
+            "dojo/_base/connect",
+            "dojox/grid/DataGrid",
+            "dojo/data/ItemFileReadStore",
+            "dijit/form/Button",
+            "dojo/parser",
+
+            "dijit/layout/BorderContainer",
+            "dijit/layout/ContentPane",
+            "dojo/domReady!"
+        ], function (Map, FindTask, FindParameters, SimpleMarkerSymbol, SimpleLineSymbol, SimpleFillSymbol,
+                     Color, on, dom, registry, arrayUtils, connect, DataGrid, ItemFileReadStore, Button, parser) {
+            var findTask, findParams;
+            var map, center, zoom;
+            var grid, store;
+
+            parser.parse();
+
+            registry.byId("search").on("click", doFind);
+
+            center = [-83.266, 42.568];
+            zoom = 11;
+            map = new esri.Map("map", {
+                basemap: "streets",
+                center: center,
+                zoom: zoom
+            });
+
+            //创建一个查询任务
+            findTask = new FindTask("http://sampleserver1.arcgisonline.com/ArcGIS/rest/services/TaxParcel/TaxParcelQuery/MapServer/");
+
+            map.on("load", function () {
+                //创建查询参数
+                findParams = new FindParameters();
+                findParams.returnGeometry = true;
+                findParams.layerIds = [0];
+                findParams.searchFields = ["OWNERNME1", "OWNERNME2"];
+                findParams.outSpatialReference = map.spatialReference;
+            });
+
+            function doFind() {
+                findParams.searchText = dom.byId("ownerName").value;//获取查询的内容
+                findTask.execute(findParams, showResults);//执行查询
+            }
+
+            function showResults(results) {
+                map.graphics.clear();
+                var symbol = new SimpleFillSymbol(
+                        SimpleFillSymbol.STYLE_SOLID,
+                        new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID, new Color([98, 194, 204]), 2),
+                        new Color([98, 194, 204, 0.5])
+                );
+
+                //创建一个数组
+                var items = arrayUtils.map(results, function (result) {
+                    var graphic = result.feature;
+                    graphic.setSymbol(symbol);
+                    map.graphics.add(graphic);
+                    console.log(result.feature.attributes);
+                    return result.feature.attributes;//所有信息字段的列表
+                });
+
+                //创建数据对象
+                var data = {
+                    identifier: "PARCELID",//关键字段
+                    label: "PARCELID", //显示字段
+                    items: items//绑定
+                };
+
+                //数据存储对象
+                store = new ItemFileReadStore({
+                    data: data
+                });
+                var grid = registry.byId("grid");
+                grid.setStore(store);
+                grid.on("rowclick", onRowClickHandler);
+
+                //地图居中
+                map.centerAndZoom(center, zoom);
+            }
+
+            //单击信息定位
+            function onRowClickHandler(evt) {
+                var clickedTaxLotId = evt.grid.getItem(evt.rowIndex).PARCELID;//获取这一行的变化
+                var selectedTaxLot = arrayUtils.filter(map.graphics.graphics, function (graphic) {//过滤
+                    return ((graphic.attributes) && graphic.attributes.PARCELID === clickedTaxLotId);//===不只是数值相等,数据类型也要相同
+                });
+                if (selectedTaxLot.length) {
+                    map.setExtent(selectedTaxLot[0].geometry.getExtent(), true);//定位到信息
+                }
+            }
+        });
+    </script>
+</head>
+<body class="claro">
+<div data-dojo-type="dijit/layout/BorderContainer" data-dojo-props="design:'headline'"
+     style="width:100%;height:100%;margin:0;">
+    <div data-dojo-type="dijit/layout/ContentPane" data-dojo-props="region:'top'" style="height:40px;">
+        Owner name: <input type="text" id="ownerName" size="60" value="Katz"/>
+        <button id="search" data-dojo-type="dijit.form.Button" type="button" data-dojo-attach-point="button">Search
+        </button>
+    </div>
+    <div id="map" data-dojo-props="region:'center'" data-dojo-type="dijit/layout/ContentPane"
+         style="border:1px solid #000;"></div>
+    <div data-dojo-type="dijit/layout/ContentPane" data-dojo-props="region:'bottom'" style="height:150px;">
+        <table data-dojo-type="dojox/grid/DataGrid" data-dojo-id="grid" id="grid"
+               data-dojo-props="rowsPerPage:'5',rowSelector:'20px'">
+            <thead>
+            <tr>
+                <th field="PARCELID">Parcel ID</th>
+                <th field="OWNERNME1">Owner 1</th>
+                <th field="OWNERNME2">Owner 2</th>
+                <th field="RESYRBLT ">Year Built</th>
+                <th field="SITEADDRESS" width="100%">Address</th>
+            </tr>
+            </thead>
+        </table>
+    </div>
+</div>
+</body>
+</html>
