@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Baidu Map</title>
+    <link rel="stylesheet" type="text/css" href="arcgisJS_318/esri/css/esri.css"/>
+    <style>
+        html, body, #map {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        .base-map-ano {
+            position: absolute;
+            right: 0pt;
+            top: 18pt;
+            background: #e6edf1;
+            border: #96aed1 1px solid;
+            padding: 4px 5px;
+            padding-left: 0px;
+            padding-top: 0px;
+            display: none;
+            font-weight: normal;
+        }
+
+        .base-map {
+            position: absolute;
+            right: 15pt;
+            top: 15pt;
+            background: #f0f0f0;
+            border: #96aed1 1px solid;
+            width: auto;
+            height: auto;
+            z-index: 99;
+            font: normal 11px "宋体",Arial;
+            color: #868686;
+        }
+
+        .base-map-switch {
+            padding: 4px 8px;
+            float: left;
+        }
+
+        .base-map-switch-active {
+            background: #e6edf1;
+            font-weight: bold;
+            color: #4d4d4d;
+        }
+
+        .base-map-switch:hover {
+            cursor: pointer;
+        }
+
+        .base-map-switch-center {
+            border: 1px #96aed1 solid;
+            border-top: none;
+            border-bottom: none;
+        }
+    </style>
+    <script type="text/javascript">
+        dojoConfig = {
+            parseOnLoad: true,
+            packages: [{
+                name: 'layer',
+                location: this.location.pathname.replace(/\/[^/]+$/, "") + "/js/layer"
+            }]
+        };
+    </script>
+    <script src="arcgisJS_318/init.js"></script>
+    <script>
+        var map;
+        require(["esri/map",
+                    "layer/BDVecLayer",
+                    "esri/layers/FeatureLayer",
+                    "esri/geometry/Point",
+                    "esri/SpatialReference",
+                    "dojo/domReady!"],
+                function (Map,
+                          BDVecLayer,
+                          FeatureLayer,
+                          Point,
+                          SpatialReference
+                ) {
+                    map = new Map("map", {
+                        logo: false
+                    });
+                    var vecMap = new BDVecLayer();
+                    map.addLayer(vecMap);
+
+
+                    var pt = new Point(7038512.810510807, 2629489.7975553474, new SpatialReference({ wkid: 102100 }));
+                    map.centerAndZoom(pt, 5);
+                });
+    </script>
+</head>
+<body>
+<div id="map">
+
+</div>
+</body>
+</html>

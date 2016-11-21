@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title></title>
+    <link rel="stylesheet" href="http://js.arcgis.com/3.9/js/dojo/dijit/themes/soria/soria.css" />
+    <link rel="stylesheet" href="http://js.arcgis.com/3.9/js/esri/css/esri.css" />
+    <link rel="stylesheet" type="text/css" href="http://www.jeasyui.net/Public/js/easyui/themes/default/easyui.css">
+    <link rel="stylesheet" type="text/css" href="http://www.jeasyui.net/Public/js/easyui/themes/icon.css">
+    <script type="text/javascript" src="http://code.jquery.com/jquery-1.6.1.min.js"></script>
+    <script src="http://js.arcgis.com/3.9/"></script>
+    <script type="text/javascript" src="http://www.jeasyui.net/Public/js/easyui/jquery.easyui.min.js"></script>
+    <script type="text/javascript">
+        $(function () {
+            var map;
+            var layer, visible = [];
+            require(["dojo/parser", "dojo/_base/window", "dojo/dom-style", "dojo/topic", "dijit/registry",
+                        "esri/map", "esri/layers/ArcGISTiledMapServiceLayer", "esri/layers/ArcGISDynamicMapServiceLayer",
+                        "dojo/domReady!"],
+                    function (parser, win, domStyle, topic, registry, Map, ArcGISTiledMapServiceLayer, ArcGISDynamicMapServiceLayer) {
+                        parser.parse();
+                        map = new Map("mapDiv");
+                        layer = new esri.layers.ArcGISDynamicMapServiceLayer("http://sampleserver6.arcgisonline.com/arcgis/rest/services/Census/MapServer")
+                        map.addLayer(layer);
+                        if (layer.loaded) {
+                            buildLayerList(layer);
+                        } else {
+                            dojo.connect(layer, "onLoad", buildLayerList);
+                        }
+                    });
+            function getChildrenNodes(parentnodes, node) {
+                for (var i = parentnodes.length - 1; i >= 0; i--) {
+
+                    var pnode = parentnodes[i];
+                    //如果是父子关系，为父节点增加子节点，退出for循环
+                    if (pnode.id == node.pid) {
+                        pnode.state = "closed";//关闭二级树
+                        pnode.children.push(node);
+                        return;
+                    } else {
+                        //如果不是父子关系，删除父节点栈里当前的节点，
+                        //继续此次循环，直到确定父子关系或不存在退出for循环
+                        parentnodes.pop();
+                    }
+                }
+            }
+            //树的构造
+            function buildLayerList(layer) {
+                //构建图层树形结构
+                var layerinfos = layer.layerInfos;
+                var treeList = [];//jquery-easyui的tree用到的tree_data.json数组
+                var parentnodes = [];//保存所有的父亲节点
+                var root = { "id": "rootnode", "text": "所有图层", "children": [] };//增加一个根节点
+                var node = {};
+                //  alert(layerinfos.length);
+                if (layerinfos != null && layerinfos.length > 0) {
+
+                    for (var i = 0, j = layerinfos.length; i < j; i++) {
+                        var info = layerinfos[i];
+                        if (info.defaultVisibility) {
+                            visible.push(info.id);
+                        }
+                        //node为tree用到的json数据
+                        node = {
+                            "id": info.id,
+                            "text": info.name,
+                            "pid": info.parentLayerId,
+                            "checked": info.defaultVisibility ? true : false,
+                            "children": []
+                        };
+                        if (info.parentLayerId == -1) {
+                            parentnodes.push(node);
+                            root.children.push(node);
+                        } else {
+                            getChildrenNodes(parentnodes, node);
+                            parentnodes.push(node);
+                        }
+                    }
+                }
+                treeList.push(root);
+                //jquery-easyui的树
+                $("#tt").tree({
+                    data: treeList,
+                    checkbox: true, //使节点增加选择框
+                    onCheck: function (node, checked) {//更新显示选择的图层
+                        var visible = [];
+
+                        var nodes = $('#tt').tree("getChecked");
+                        dojo.forEach(nodes, function (node) {
+                            visible.push(node.id);
+                        });
+                        //if there aren't any layers visible set the array to be -1
+                        //如果没有现实图层设置为-1
+                        if (visible.length === 0) {
+                            visible.push(-1);
+                        }
+                        layer.setVisibleLayers(visible);
+                    }
+                });
+
+            }
+
+        });
+    </script>
+</head>
+<body class="soria">
+
+<div>
+    <ul id="tt" style="margin-top:0;width:250px"></ul>
+    <div id="mapDiv">
+    </div>
+</div>
+
+</body>
+</html>
